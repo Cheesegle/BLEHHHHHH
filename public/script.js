@@ -36,15 +36,7 @@ function init() {
 
     // Create Cannon.js physics world
     physicsWorld = new CANNON.World();
-    physicsWorld.gravity.set(0, -20, 0); // Set gravity (adjust as needed)
-
-    // Add linear and angular damping to the world
-    physicsWorld.defaultContactMaterial.friction = 0.8; // Adjust the friction value as needed
-    physicsWorld.defaultContactMaterial.restitution = 0; // Adjust the restitution value as needed
-    physicsWorld.defaultContactMaterial.contactEquationStiffness = 1e9; // Adjust as needed
-    physicsWorld.defaultContactMaterial.contactEquationRelaxation = 4; // Adjust as needed
-    physicsWorld.defaultContactMaterial.frictionEquationStiffness = 1e9; // Adjust as needed
-    physicsWorld.defaultContactMaterial.frictionEquationRelaxation = 4; // Adjust as needed
+    physicsWorld.gravity.set(0, -40, 0); // Set gravity (adjust as needed)
 
     var textureLoader = new THREE.TextureLoader();
 
@@ -64,14 +56,22 @@ function init() {
 
             camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 20000);
 
-            // Create a Cannon.js body for the camera
+            // Create a Cannon.js body for the player
             var cameraShape = new CANNON.Sphere(6);
             cameraBody = new CANNON.Body({
                 mass: 1,
-                position: new CANNON.Vec3(0, 20, 0)
+                position: new CANNON.Vec3(0, 20, 0),
+                material: new CANNON.Material({
+                    friction: 0.05,
+                    restitution: 0
+                }),
+                linearDamping: 0.2,
+                angularDamping: 0.2,
+                fixedRotation: true // Ensure the player does not rotate
             });
             cameraBody.addShape(cameraShape);
             physicsWorld.addBody(cameraBody);
+
 
             renderer = new THREE.WebGLRenderer({
                 canvas: document.getElementById("renderCanvas"),
@@ -92,7 +92,14 @@ function init() {
                         let cannonBody = new CANNON.Body({
                             mass: 0,
                             position: new CANNON.Vec3(child.position.x, child.position.y, child.position.z),
-                            quaternion: new CANNON.Quaternion().copy(child.quaternion) // Set the quaternion to match the child's rotation
+                            quaternion: new CANNON.Quaternion().copy(child.quaternion), // Set the quaternion to match the child's rotation
+                            material: new CANNON.Material({
+                                friction: 0.05,
+                                restitution: 0
+                            }),
+                            linearDamping: 0.2,
+                            angularDamping: 0.2,
+                            fixedRotation: true // Ensure the player does not rotate
                         });
 
                         let converted = threeToCannon(child, {
@@ -105,12 +112,13 @@ function init() {
                             new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true })
                         );
                         debugMesh.position.copy(child.position);
-                        debugMesh.quaternion.copy(child.quaternion); // Set the debug mesh rotation to match the child's rotation
+                        debugMesh.quaternion.copy(child.quaternion);
                         scene.add(debugMesh);
+
+                        console.log(cannonBody)
+
                         cannonBody.addShape(converted.shape, converted.offset, converted.orientation);
                         physicsWorld.addBody(cannonBody);
-
-                        child.material.envMapIntensity = 0.5; // Adjust this value to control reflection intensity
                     }
                 });
 
