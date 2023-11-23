@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>BLEHHHHHH</title>
@@ -11,12 +12,27 @@
         canvas {
             display: block;
         }
+        #hudContainer {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          z-index: 1; /* Make sure the HUD is rendered on top of the 3D scene */
+        }
+
+        #hudCanvas {
+        }
+
     </style>
 </head>
+
 <body>
     <canvas id="renderCanvas"></canvas>
+    <div id="hudContainer">
+        <canvas id="hudCanvas" width="200" height="100"></canvas>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/cannon@0.6.2/build/cannon.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js" type="module"></script>
 </body>
+
 </html>

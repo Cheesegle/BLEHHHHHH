@@ -23,10 +23,15 @@ var moveUp = false;
 var moveDown = false;
 var physicsWorld;
 var cameraBody;
+var hudCanvas, hudContext;
+
 
 const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
 
 function init() {
+
+    initHUD();
+
     scene = new THREE.Scene();
 
     // Create Cannon.js physics world
@@ -34,7 +39,7 @@ function init() {
     physicsWorld.gravity.set(0, -20, 0); // Set gravity (adjust as needed)
 
     // Add linear and angular damping to the world
-    physicsWorld.defaultContactMaterial.friction = 0; // Adjust the friction value as needed
+    physicsWorld.defaultContactMaterial.friction = 0.8; // Adjust the friction value as needed
     physicsWorld.defaultContactMaterial.restitution = 0; // Adjust the restitution value as needed
     physicsWorld.defaultContactMaterial.contactEquationStiffness = 1e9; // Adjust as needed
     physicsWorld.defaultContactMaterial.contactEquationRelaxation = 4; // Adjust as needed
@@ -79,17 +84,29 @@ function init() {
             scene.add(pointerControls.getObject());
 
             var loader = new GLTFLoader();
-            loader.load('Shipyard.gltf', function(gltf) {
+            loader.load('map.glb', function(gltf) {
                 var model = gltf.scene;
 
                 model.traverse(function(child) {
                     if (child.isMesh) {
                         let cannonBody = new CANNON.Body({
-                            mass: 0
+                            mass: 0,
+                            position: new CANNON.Vec3(child.position.x, child.position.y, child.position.z),
+                            quaternion: new CANNON.Quaternion().copy(child.quaternion) // Set the quaternion to match the child's rotation
                         });
+
                         let converted = threeToCannon(child, {
-                            type: ShapeType.MESH
+                            type: ShapeType.BOX
                         });
+
+                        // Visualize the box hitbox
+                        const debugMesh = new THREE.Mesh(
+                            new THREE.BoxGeometry(converted.shape.halfExtents.x * 2, converted.shape.halfExtents.y * 2, converted.shape.halfExtents.z * 2),
+                            new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true })
+                        );
+                        debugMesh.position.copy(child.position);
+                        debugMesh.quaternion.copy(child.quaternion); // Set the debug mesh rotation to match the child's rotation
+                        scene.add(debugMesh);
                         cannonBody.addShape(converted.shape, converted.offset, converted.orientation);
                         physicsWorld.addBody(cannonBody);
 
@@ -208,10 +225,54 @@ function init() {
                 camera.position.set(position.x, position.y, position.z);
 
                 renderer.render(scene, camera);
+
+                // Update HUD
+                updateHUD(frameTime);
+
+                renderer.render(scene, camera);
             }
 
         });
 }
+
+function initHUD() {
+    hudCanvas = document.getElementById("hudCanvas");
+    hudContext = hudCanvas.getContext("2d");
+
+    // Set initial HUD canvas size
+    hudCanvas.width = window.innerWidth;
+    hudCanvas.height = window.innerHeight;
+}
+
+function updateHUD(frameTime) {
+    // Clear the HUD canvas
+    hudContext.clearRect(0, 0, hudCanvas.width, hudCanvas.height);
+
+    // Display FrameTime
+    hudContext.fillStyle = "#00FF00";
+    hudContext.font = "16px Arial";
+    hudContext.fillText("FrameTime: " + frameTime, 10, 20);
+
+    // Calculate FPS
+    let fps = Math.round(1 / (frameTime / 1000));
+
+    // Display FPS
+    hudContext.fillStyle = "#00FF00";
+    hudContext.font = "16px Arial";
+    hudContext.fillText("FPS: " + fps, 10, 40); // Adjust position as needed
+
+    // Draw a simple crosshair at the center
+    hudContext.strokeStyle = "#00FF00";
+    hudContext.lineWidth = 2;
+    hudContext.beginPath();
+    hudContext.moveTo(hudCanvas.width / 2 - 10, hudCanvas.height / 2);
+    hudContext.lineTo(hudCanvas.width / 2 + 10, hudCanvas.height / 2);
+    hudContext.moveTo(hudCanvas.width / 2, hudCanvas.height / 2 - 10);
+    hudContext.lineTo(hudCanvas.width / 2, hudCanvas.height / 2 + 10);
+    hudContext.stroke();
+}
+
+
 
 document.addEventListener("DOMContentLoaded", () => {
     const socket = io(); // Connect to the Socket.io server
@@ -282,6 +343,10 @@ window.addEventListener('resize', function() {
     camera.aspect = newWidth / newHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(newWidth, newHeight);
+
+    // Resize HUD canvas
+    hudCanvas.width = newWidth;
+    hudCanvas.height = newHeight;
 });
 
 init();
