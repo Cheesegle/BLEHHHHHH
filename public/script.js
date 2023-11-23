@@ -24,6 +24,8 @@ var moveDown = false;
 var physicsWorld;
 var cameraBody;
 var hudCanvas, hudContext;
+var canJump = false;
+var jumpVelocity = 25;
 
 
 const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
@@ -115,8 +117,6 @@ function init() {
                         debugMesh.quaternion.copy(child.quaternion);
                         scene.add(debugMesh);
 
-                        console.log(cannonBody)
-
                         cannonBody.addShape(converted.shape, converted.offset, converted.orientation);
                         physicsWorld.addBody(cannonBody);
                     }
@@ -156,6 +156,13 @@ function init() {
             function handleCollision(event) {
                 // Get the contact normal (the direction of the collision)
                 var contactNormal = event.contact.ni;
+
+
+                console.log(contactNormal)
+                // If the player is colliding from below (contact normal pointing up)
+                if (contactNormal.y < -0.9) {
+                    canJump = true; // Allow jumping
+                }
 
                 // Get the current velocity of the player body
                 var velocity = cameraBody.velocity;
@@ -221,12 +228,10 @@ function init() {
                     velocity.z += rightDirection.z * playerSpeed;
                 }
 
-                if (keyState[32]) {
-                    if (cameraBody.world.contacts.length > 0) {
-                        if (velocity.y < 15) {
-                            velocity.y += 10;
-                        }
-                    }
+                if (keyState[32] && canJump) {
+                    // Jump only if the player can jump
+                    velocity.y = jumpVelocity;
+                    canJump = false; // Prevent consecutive jumps
                 }
 
                 // Update the camera's position
@@ -270,7 +275,7 @@ function updateHUD(frameTime) {
     hudContext.fillText("FPS: " + fps, 10, 40); // Adjust position as needed
 
     // Draw a simple crosshair at the center
-    hudContext.strokeStyle = "#00FF00";
+    hudContext.strokeStyle = "#0000FF";
     hudContext.lineWidth = 2;
     hudContext.beginPath();
     hudContext.moveTo(hudCanvas.width / 2 - 10, hudCanvas.height / 2);
