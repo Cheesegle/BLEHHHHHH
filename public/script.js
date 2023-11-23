@@ -157,8 +157,6 @@ function init() {
                 // Get the contact normal (the direction of the collision)
                 var contactNormal = event.contact.ni;
 
-
-                console.log(contactNormal)
                 // If the player is colliding from below (contact normal pointing up)
                 if (contactNormal.y < -0.9) {
                     canJump = true; // Allow jumping
